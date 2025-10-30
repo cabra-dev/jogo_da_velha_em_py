@@ -26,4 +26,4 @@ jobs:
 
     - name: Rodar código principal
       run: |
-        python main.py
+        python main.py < entradas.txt
