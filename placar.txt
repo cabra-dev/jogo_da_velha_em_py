@@ -1,0 +1,4 @@
+X:2
+O:2
+empates:0
+total:4
