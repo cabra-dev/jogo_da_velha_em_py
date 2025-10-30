@@ -1,50 +1,69 @@
-# Importo a função que roda uma partida individual do jogo
 from jogo import jogar_uma_partida
-
-# Aqui eu importo as funções que salvam e carregam o placar em arquivo
 from placar import salvar_placar, carregar_placar
+import os
 
-# Essa função controla várias partidas seguidas do jogo da velha
-def jogar_varias_partidas():
-    # Carrego o placar salvo do arquivo (ou começa do zero se for a primeira vez)
+def jogar_varias_partidas(modo_automatico=False):
     placar = carregar_placar()
+    jogadas_auto = [
+        (0, 0), (0, 1), (1, 1), (1, 0), (2, 2)
+    ]  # Jogadas automáticas (X vence)
+    indice = 0
 
-    # Esse laço vai rodar infinitamente até o jogador decidir parar
     while True:
-        # Mostra qual é o número da partida atual (baseado no total salvo)
         print(f"\nIniciando partida {placar['total'] + 1}")
 
-        # Aqui eu executo uma partida e guardo quem venceu (ou None se empatou)
-        vencedor = jogar_uma_partida()
+        if modo_automatico:
+            # Modo sem input — simula jogadas
+            vencedor = jogar_uma_partida_automatica(jogadas_auto)
+        else:
+            vencedor = jogar_uma_partida()
 
-        # Atualizo o número total de partidas jogadas
         placar["total"] += 1
-
-        # Se teve um vencedor (X ou O), adiciona uma vitória pra ele
         if vencedor:
             placar[vencedor] += 1
-        # Se não teve vencedor, então foi empate
         else:
             placar["empates"] += 1
 
-        # Mostro o placar atualizado na tela
         print("\nPlacar:")
         print(f"Vitórias X: {placar['X']}")
         print(f"Vitórias O: {placar['O']}")
         print(f"Empates: {placar['empates']}")
-
-        # Salvo o placar no arquivo pra não perder os dados
         salvar_placar(placar)
 
-        # Pergunto se o jogador quer jogar de novo
-        jogar_novamente = input("Deseja jogar novamente? (s/n): ").lower()
+        if modo_automatico:
+            break  # No modo automático, roda apenas uma partida
 
-        # Se o jogador responder qualquer coisa diferente de 's', o jogo acaba
+        jogar_novamente = input("Deseja jogar novamente? (s/n): ").lower()
         if jogar_novamente != "s":
             print("Fim de jogo. Obrigado por jogar!")
-            break  # Sai do loop e finaliza tudo
+            break
 
-# Essa parte garante que o jogo só começa se o script for executado diretamente
+
+def jogar_uma_partida_automatica(jogadas):
+    """Versão automática da função jogar_uma_partida()"""
+    from tabuleiro import criar_tabuleiro, exibir_tabuleiro
+    from jogo import verificar_vitoria, trocar_jogador
+
+    tabuleiro = criar_tabuleiro()
+    jogador = "X"
+    jogadas_feitas = 0
+
+    for linha, coluna in jogadas:
+        if tabuleiro[linha][coluna] == " ":
+            tabuleiro[linha][coluna] = jogador
+            jogadas_feitas += 1
+            if verificar_vitoria(tabuleiro, jogador):
+                exibir_tabuleiro(tabuleiro)
+                print(f"Jogador {jogador} venceu automaticamente!")
+                return jogador
+            jogador = trocar_jogador(jogador)
+
+    exibir_tabuleiro(tabuleiro)
+    print("Empate automático!")
+    return None
+
+
 if __name__ == "__main__":
-    jogar_varias_partidas()
-
+    # Detecta se está no GitHub Actions
+    modo_automatico = os.getenv("GITHUB_ACTIONS") == "true"
+    jogar_varias_partidas(modo_automatico)
