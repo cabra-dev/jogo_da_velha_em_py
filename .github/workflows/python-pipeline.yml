@@ -2,26 +2,24 @@ name: Python Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
 
 jobs:
-  # ---- Etapa 1: Executar o código principal ----
+  # 🧱 Etapa 1 - Rodar o código principal
   build:
-    name: Rodar código principal
     runs-on: ubuntu-latest
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
 
-      - name: Executar script principal
+      - name: Rodar código principal
         run: |
           python main.py
 
-  # ---- Etapa 2: Análise de Segurança Estática (SAST) ----
+  # 🔍 Etapa 2 - Análise de Segurança Estática (SAST)
   sast:
-    name: SAST - Análise de Segurança Estática
     runs-on: ubuntu-latest
     steps:
       - name: Checkout do código
@@ -33,19 +31,19 @@ jobs:
           pip install bandit
 
       - name: Rodar Bandit (SAST)
-        run: bandit -r . -f txt -o bandit-report.txt
+        run: |
+          bandit -r . -f txt -o bandit-report.txt
 
-      - name: Upload do relatório (artefato)
+      - name: Upload do relatório (SAST)
         uses: actions/upload-artifact@v4
         with:
           name: relatorio-bandit
           path: bandit-report.txt
 
-  # ---- Etapa 3: Análise de Segurança Dinâmica (DAST) ----
+  # 🌐 Etapa 3 - Análise de Segurança Dinâmica (DAST)
   dast:
-    name: DAST - Análise de Segurança Dinâmica
     runs-on: ubuntu-latest
-    needs: sast   # roda só depois do SAST
+    needs: sast  # roda depois do SAST
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
@@ -53,11 +51,20 @@ jobs:
       - name: Instalar OWASP ZAP
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget gnupg
-          wget -q -O - https://raw.githubusercontent.com/zaproxy/zaproxy/main/assets/packages.asc | sudo apt-key add -
-          echo "deb https://download.opensuse.org/repositories/home:/cabelo/xUbuntu_22.04/ /" | sudo tee /etc/apt/sources.list.d/zaproxy.list
-          sudo apt-get update
-          sudo apt-get install -y zaproxy
+          sudo apt-get install -y openjdk-17-jre-headless wget
+          wget https://github.com/zaproxy/zaproxy/releases/download/v2.15.0/ZAP_2.15.0_Linux.tar.gz
+          tar -xvzf ZAP_2.15.0_Linux.tar.gz
+          sudo mv ZAP_2.15.0 /opt/zap
+          echo "ZAP instalado com sucesso!"
 
-      - name: Executar varredura simulada
-        run: echo "Simulação de DAST concluída (nenhum app web para testar)"
+      - name: Executar varredura simulada (DAST)
+        run: |
+          echo "Rodando OWASP ZAP em modo console..."
+          /opt/zap/zap.sh -cmd -quickurl https://example.com -quickout zap_report.html || true
+          echo "Varredura concluída (simulada para exemplo acadêmico)."
+
+      - name: Upload do relatório (DAST)
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-zap
+          path: zap_report.html
